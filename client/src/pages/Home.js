@@ -2,12 +2,19 @@ import React from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import TodoList from "../components/TodoList";
+import styled from "styled-components";
+
+const Main = styled.main`
+    height: 60vh;
+`;
 
 const Home = () => {
     return (
         <>
             <Header />
-            <TodoList />
+            <Main>
+                <TodoList />
+            </Main>
             <Footer />
         </>
     );

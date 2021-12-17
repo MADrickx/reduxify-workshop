@@ -4,9 +4,7 @@ import Footer from "../components/Footer";
 import TodoList from "../components/TodoList";
 import styled from "styled-components";
 
-const Main = styled.main`
-    height: 60vh;
-`;
+const Main = styled.main``;
 
 const Home = () => {
     return (

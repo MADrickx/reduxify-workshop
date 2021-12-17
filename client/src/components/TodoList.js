@@ -8,7 +8,7 @@ const TodoContainer = styled.div`
     border-radius: 10px;
     box-shadow: -3px -3px 7px #ffffff73, 2px 2px 5px rgba(94, 104, 121, 0.288);
     padding: 1rem;
-    margin: 5rem auto;
+    margin: 2rem auto 7rem auto;
     width: 50%;
     max-width: 500px;
     display: flex;

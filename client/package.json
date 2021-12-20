@@ -6,7 +6,6 @@
     "@emotion/react": "^11.7.1",
     "@emotion/styled": "^11.6.0",
     "@material-ui/core": "^4.11.4",
-    "@material-ui/data-grid": "^4.0.0-alpha.29",
     "@material-ui/icons": "^4.11.2",
     "@mui/icons-material": "^5.2.1",
     "@mui/material": "^5.2.3",
@@ -14,17 +13,20 @@
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
+<<<<<<< HEAD
     "axios": "^0.24.0",
     "dotenv": "^10.0.0",
     "firebase": "^9.6.1",
+=======
+>>>>>>> 80e301aa8ec4654f2355a0cadf71d1576514f552
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-redux": "^7.2.6",
     "react-router-dom": "^6.1.1",
     "react-scripts": "4.0.3",
+    "redux": "^4.1.2",
     "redux-persist": "^6.0.0",
-    "styled-components": "^5.3.3",
-    "web-vitals": "^1.0.1"
+    "styled-components": "^5.3.3"
   },
   "devDependencies": {
     "@babel/core": "^7.15.8",

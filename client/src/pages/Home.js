@@ -6,9 +6,7 @@ import styled from "styled-components";
 import {useAuth} from "../contexts/AuthContext";
 import {useNavigate} from "react-router-dom";
 
-const Main = styled.main`
-    height: 60vh;
-`;
+const Main = styled.main``;
 
 const Home = () => {
     return (

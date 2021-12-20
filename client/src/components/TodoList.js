@@ -1,20 +1,30 @@
-import React, {useRef, useState} from "react";
+import React, {useRef, useState, useEffect} from "react";
 import styled from "styled-components";
 import TodoItem from "./TodoItem";
 import CloseIcon from "@mui/icons-material/Cancel";
-
+import ClearAllIcon from "@mui/icons-material/ClearAll";
+import AddIcon from "@mui/icons-material/Add";
+import CheckCircle from "@mui/icons-material/Check";
+import {mobile} from "../responsive";
+import {db} from "../firebase";
+import {addDoc, collection, doc, getDocs, deleteDoc} from "firebase/firestore";
 const TodoContainer = styled.div`
     background: #dde1e7;
     border-radius: 10px;
     box-shadow: -3px -3px 7px #ffffff73, 2px 2px 5px rgba(94, 104, 121, 0.288);
     padding: 1rem;
-    margin: 5rem auto;
+    margin: 1rem auto 7rem auto;
     width: 50%;
     max-width: 500px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    ${mobile({
+        width: "90%",
+        boxSizing: "border-box",
+        padding: "5%",
+    })};
 `;
 
 const TodoHeading = styled.h2`
@@ -29,6 +39,15 @@ const ButtonContainer = styled.div`
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+    align-items: center;
+    margin: 1rem 0;
+`;
+
+const ButtonContainer2 = styled.div`
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
     align-items: center;
     margin: 1rem 0;
 `;
@@ -52,10 +71,25 @@ const ButtonClear = styled.button`
     border: none;
     padding: 0.5rem 1rem;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `;
 
 const ButtonDelete = styled.button`
     background-color: red;
+    color: white;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    margin-right: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`;
+
+const ButtonSetToDone = styled.button`
+    background-color: green;
     color: white;
     border-radius: 5px;
     border: none;
@@ -107,16 +141,31 @@ const AddButton = styled.button`
     cursor: pointer;
     flex: 1;
     margin-left: 1rem;
-    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0;
 `;
 
 const TodoList = () => {
     const [todoItem, setTodoItem] = useState([]);
     const [input, setInput] = useState("");
     const [displayModal, setDisplayModal] = useState(false);
-
+    const itemsCollectionRef = collection(db, "items");
     const Modal = useRef(null);
     const AddInputField = useRef(null);
+
+    const cancel = <CloseIcon />;
+    const clear = <ClearAllIcon />;
+    const add = <AddIcon />;
+    const success = <CheckCircle />;
+    useEffect(() => {
+        const getItems = async () => {
+            const data = await getDocs(itemsCollectionRef);
+            setTodoItem(data.docs.map((doc) => ({...doc.data(), id: doc.id})));
+        };
+        getItems();
+    }, []);
 
     const handleAdd = () => {
         setDisplayModal(!displayModal);
@@ -126,19 +175,20 @@ const TodoList = () => {
         AddInputField.current.focus();
     };
 
-    const cancel = <CloseIcon />;
-
     const handleAddInput = (e) => {
         setInput(() => {
-            return [e.target.value];
+            return e.target.value;
         });
     };
 
-    const handleAddItem = (e) => {
-        e.preventDefault();
-        if (!(todoItem.filter((item) => item === input).length > 0)) {
-            setTodoItem((prev) => [...prev, input]);
-        }
+    const handleAddItem = async (e) => {
+        await addDoc(itemsCollectionRef, {
+            name: input,
+            isDone: false,
+            quantity: 1,
+        }).then(function (docRef) {
+            setTodoItem((prev) => [...prev, {name: input, id: docRef.id}]);
+        });
         AddInputField.current.value = "";
         AddInputField.current.focus();
     };
@@ -150,13 +200,25 @@ const TodoList = () => {
     };
 
     const handleClear = () => {
+        todoItem.forEach(async (item) => {
+            const userDoc = doc(db, "items", item.id);
+            await deleteDoc(userDoc).then(() => {
+                console.log("deleted object with ID : " + item.id);
+            });
+        });
         setTodoItem([]);
     };
 
-    const handleDelete = (index) => {
-        const newArr = todoItem;
-        newArr[index] = "";
-        setTodoItem([...newArr.filter((item) => item !== "")]);
+    const handleSetToDone = () => {};
+
+    const handleDelete = async (id) => {
+        const userDoc = doc(db, "items", id);
+        await deleteDoc(userDoc).then(() => {
+            const newArr = todoItem.filter((item) => {
+                return item.id !== id;
+            });
+            setTodoItem(newArr);
+        });
     };
 
     return (
@@ -165,9 +227,9 @@ const TodoList = () => {
                 <TodoHeading>Liste de courses</TodoHeading>
                 <ButtonContainer>
                     <ButtonAdd onClick={handleAdd}>
-                        {displayModal ? cancel : "add"}
+                        {displayModal ? cancel : add}
                     </ButtonAdd>
-                    <ButtonClear onClick={handleClear}>Clear</ButtonClear>
+                    <ButtonClear onClick={handleClear}>{clear}</ButtonClear>
                 </ButtonContainer>
                 <ModalAdd ref={Modal} key={Modal}>
                     <AddInput
@@ -176,23 +238,29 @@ const TodoList = () => {
                         onKeyDown={handleKeypress}
                     />
                     <AddButton type={"submit"} onClick={handleAddItem}>
-                        +
+                        {add}
                     </AddButton>
                 </ModalAdd>
                 <ItemContainer>
-                    {todoItem
-                        .filter((item) => item !== "")
-                        .map((filteredItem, index) => (
-                            <FilteredContainer
-                                id={index}
-                                key={`${(filteredItem, index)}`}>
-                                <TodoItem item={filteredItem} />
+                    {todoItem.map((filteredItem) => (
+                        <FilteredContainer key={`${filteredItem.id}`}>
+                            <TodoItem filteredItem={filteredItem.name} />
+                            <ButtonContainer2>
+                                <ButtonSetToDone
+                                    onClick={() =>
+                                        handleSetToDone(filteredItem.id)
+                                    }>
+                                    {success}
+                                </ButtonSetToDone>
                                 <ButtonDelete
-                                    onClick={() => handleDelete(index)}>
+                                    onClick={() =>
+                                        handleDelete(filteredItem.id)
+                                    }>
                                     {cancel}
                                 </ButtonDelete>
-                            </FilteredContainer>
-                        ))}
+                            </ButtonContainer2>
+                        </FilteredContainer>
+                    ))}
                 </ItemContainer>
             </TodoContainer>
         </div>

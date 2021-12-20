@@ -1,7 +1,8 @@
-import React from "react";
-import {useNavigate} from "react-router-dom";
+import React, {useRef, useState} from "react";
+import {useAuth} from "../contexts/AuthContext";
 import styled from "styled-components";
-
+import {useNavigate} from "react-router-dom";
+import {mobile} from "../responsive";
 const Form = styled.form`
     width: 50%;
     background: #dde1e7;
@@ -14,6 +15,11 @@ const Form = styled.form`
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    ${mobile({
+        width: "90%",
+        boxSizing: "border-box",
+        padding: "5%",
+    })};
 `;
 
 const InputsContainer = styled.div`
@@ -46,31 +52,51 @@ const Submit = styled.button`
     cursor: pointer;
 `;
 
-const LoginForm = ({admin, setAdmin}) => {
+const ErrorBox = styled.p`
+    background-color: rgba(255, 0, 0, 0.7);
+    color: white;
+    padding: 1rem 0;
+    border-radius: 5px;
+    width: 90%;
+    margin: 0 1rem;
+    text-align: center;
+`;
+
+const LoginForm = () => {
+    const emailRef = useRef();
+    const passwordRef = useRef();
+    const {login} = useAuth();
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleClick = (e) => {
+    async function handleSubmit(e) {
         e.preventDefault();
-        setAdmin(true);
-        if (admin) {
-            setTimeout(() => {
-                navigate("/");
-            }, 2000);
+
+        try {
+            setError("");
+            setLoading(true);
+            await login(emailRef.current.value, passwordRef.current.value);
+            navigate("/");
+        } catch (err) {
+            setError("failed to log in");
         }
-    };
+        setLoading(false);
+    }
 
     return (
-        <Form>
+        <Form onSubmit={handleSubmit}>
+            {error && <ErrorBox>{error}</ErrorBox>}
             <InputsContainer>
-                <Label>username</Label>
-                <Inputs />
+                <Label>email</Label>
+                <Inputs ref={emailRef} />
             </InputsContainer>
             <InputsContainer>
                 <Label>password</Label>
-                <Inputs />
+                <Inputs type="password" ref={passwordRef} />
             </InputsContainer>
             <InputsContainer>
-                <Submit type={"submit"} onClick={handleClick}>
+                <Submit type={"submit"} disabled={loading}>
                     Se Connecter
                 </Submit>
             </InputsContainer>

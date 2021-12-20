@@ -6,10 +6,10 @@ const Item = styled.div`
     padding: 1rem;
 `;
 
-const TodoItem = ({item}) => {
+const TodoItem = ({filteredItem}) => {
     return (
         <Item>
-            <p>{item}</p>
+            <p>{filteredItem}</p>
         </Item>
     );
 };

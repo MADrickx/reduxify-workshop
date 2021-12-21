@@ -4,6 +4,7 @@ import styled from "styled-components";
 const Item = styled.div`
     padding-bottom: 1rem;
     padding: 1rem;
+    width: 50%;
 `;
 
 const TodoItem = ({filteredItem}) => {

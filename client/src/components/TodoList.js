@@ -7,17 +7,21 @@ import AddIcon from "@mui/icons-material/Add";
 import CheckCircle from "@mui/icons-material/Check";
 import {mobile} from "../responsive";
 import {db} from "../firebase";
-import {addDoc, collection, doc, getDocs, deleteDoc} from "firebase/firestore";
+import {
+    addDoc,
+    collection,
+    doc,
+    getDocs,
+    updateDoc,
+    deleteDoc,
+} from "firebase/firestore";
 const TodoContainer = styled.div`
-    background: #dde1e7;
+    background-color: ${(props) =>
+        props.done ? "rgba(0,255,0,0.25)" : "rgba(255,0,0,0.25)"};
     border-radius: 10px;
     box-shadow: -3px -3px 7px #ffffff73, 2px 2px 5px rgba(94, 104, 121, 0.288);
     padding: 1rem;
-<<<<<<< HEAD
-    margin: 1rem auto 7rem auto;
-=======
     margin: 2rem auto 7rem auto;
->>>>>>> 80e301aa8ec4654f2355a0cadf71d1576514f552
     width: 50%;
     max-width: 500px;
     display: flex;
@@ -35,7 +39,7 @@ const TodoHeading = styled.h2`
     width: 100%;
     margin: 0;
     padding: 0;
-    border-bottom: 1px solid lightgrey;
+    border-bottom: 1px solid white;
 `;
 
 const ButtonContainer = styled.div`
@@ -66,6 +70,18 @@ const ButtonAdd = styled.button`
     display: flex;
     justify-content: center;
     align-items: center;
+`;
+
+const ButtonSwitch = styled.button`
+    background-color: ${(props) => (props.done ? "green" : "red")};
+    color: white;
+    border-radius: 5px;
+    border: none;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `;
 
 const ButtonClear = styled.button`
@@ -155,6 +171,7 @@ const TodoList = () => {
     const [todoItem, setTodoItem] = useState([]);
     const [input, setInput] = useState("");
     const [displayModal, setDisplayModal] = useState(false);
+    const [done, setDone] = useState(false);
     const itemsCollectionRef = collection(db, "items");
     const Modal = useRef(null);
     const AddInputField = useRef(null);
@@ -163,6 +180,7 @@ const TodoList = () => {
     const clear = <ClearAllIcon />;
     const add = <AddIcon />;
     const success = <CheckCircle />;
+
     useEffect(() => {
         const getItems = async () => {
             const data = await getDocs(itemsCollectionRef);
@@ -173,10 +191,15 @@ const TodoList = () => {
 
     const handleAdd = () => {
         setDisplayModal(!displayModal);
+        setDone(false);
         !displayModal
             ? (Modal.current.style.display = "flex")
             : (Modal.current.style.display = "none");
         AddInputField.current.focus();
+    };
+
+    const handleSwitch = () => {
+        setDone(!done);
     };
 
     const handleAddInput = (e) => {
@@ -213,7 +236,17 @@ const TodoList = () => {
         setTodoItem([]);
     };
 
-    const handleSetToDone = () => {};
+    const handleSetToDone = async (id) => {
+        const userDoc = doc(db, "items", id);
+        await updateDoc(userDoc, {
+            isDone: true,
+        }).then(() => {
+            const index = todoItem.findIndex((x) => x.id === id);
+            const newArr = todoItem;
+            newArr[index].isDone = true;
+            setTodoItem(newArr);
+        });
+    };
 
     const handleDelete = async (id) => {
         const userDoc = doc(db, "items", id);
@@ -227,12 +260,18 @@ const TodoList = () => {
 
     return (
         <div>
-            <TodoContainer>
-                <TodoHeading>Liste de courses</TodoHeading>
+            <TodoContainer done={done}>
+                <TodoHeading>
+                    Liste de courses{" "}
+                    {done ? "dans le panier" : "pas encore dans le panier"}
+                </TodoHeading>
                 <ButtonContainer>
                     <ButtonAdd onClick={handleAdd}>
                         {displayModal ? cancel : add}
                     </ButtonAdd>
+                    <ButtonSwitch done={done} onClick={handleSwitch}>
+                        {done ? success : cancel}
+                    </ButtonSwitch>
                     <ButtonClear onClick={handleClear}>{clear}</ButtonClear>
                 </ButtonContainer>
                 <ModalAdd ref={Modal} key={Modal}>
@@ -246,25 +285,61 @@ const TodoList = () => {
                     </AddButton>
                 </ModalAdd>
                 <ItemContainer>
-                    {todoItem.map((filteredItem) => (
-                        <FilteredContainer key={`${filteredItem.id}`}>
-                            <TodoItem filteredItem={filteredItem.name} />
-                            <ButtonContainer2>
-                                <ButtonSetToDone
-                                    onClick={() =>
-                                        handleSetToDone(filteredItem.id)
-                                    }>
-                                    {success}
-                                </ButtonSetToDone>
-                                <ButtonDelete
-                                    onClick={() =>
-                                        handleDelete(filteredItem.id)
-                                    }>
-                                    {cancel}
-                                </ButtonDelete>
-                            </ButtonContainer2>
-                        </FilteredContainer>
-                    ))}
+                    {!done
+                        ? todoItem
+                              .filter((item) => {
+                                  return item.isDone !== true;
+                              })
+                              .map((filteredItem) => (
+                                  <FilteredContainer key={`${filteredItem.id}`}>
+                                      <TodoItem
+                                          filteredItem={filteredItem.name}
+                                      />
+                                      <ButtonContainer2>
+                                          <ButtonSetToDone
+                                              onClick={() =>
+                                                  handleSetToDone(
+                                                      filteredItem.id,
+                                                  )
+                                              }>
+                                              {success}
+                                          </ButtonSetToDone>
+                                          <ButtonDelete
+                                              onClick={() =>
+                                                  handleDelete(filteredItem.id)
+                                              }>
+                                              {cancel}
+                                          </ButtonDelete>
+                                      </ButtonContainer2>
+                                  </FilteredContainer>
+                              ))
+                        : todoItem
+                              .filter((item) => {
+                                  return item.isDone !== false;
+                              })
+                              .map((filteredItem) => (
+                                  <FilteredContainer key={`${filteredItem.id}`}>
+                                      <TodoItem
+                                          filteredItem={filteredItem.name}
+                                      />
+                                      <ButtonContainer2>
+                                          <ButtonSetToDone
+                                              onClick={() =>
+                                                  handleSetToDone(
+                                                      filteredItem.id,
+                                                  )
+                                              }>
+                                              {success}
+                                          </ButtonSetToDone>
+                                          <ButtonDelete
+                                              onClick={() =>
+                                                  handleDelete(filteredItem.id)
+                                              }>
+                                              {cancel}
+                                          </ButtonDelete>
+                                      </ButtonContainer2>
+                                  </FilteredContainer>
+                              ))}
                 </ItemContainer>
             </TodoContainer>
         </div>

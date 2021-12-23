@@ -15,6 +15,8 @@ import {
     updateDoc,
     deleteDoc,
 } from "firebase/firestore";
+import {InputLabel} from "@mui/material";
+
 const TodoContainer = styled.div`
     background-color: ${(props) =>
         props.done ? "rgba(0,255,0,0.25)" : "rgba(255,0,0,0.25)"};
@@ -58,6 +60,18 @@ const ButtonContainer2 = styled.div`
     justify-content: flex-end;
     align-items: center;
     margin: 1rem 0;
+`;
+
+const InputContainer = styled.div`
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin: 1rem 1rem 1rem 0;
+    background-color: white;
+    border-radius: 5px;
+    box-sizing: border-box;
+    padding: 1rem;
 `;
 
 const ButtonAdd = styled.button`
@@ -148,7 +162,12 @@ const ModalAdd = styled.div`
 `;
 
 const AddInput = styled.input`
-    width: 100%;
+    width: 90%;
+    margin: 1rem 0;
+    flex: 10;
+`;
+const QuantityInput = styled.input`
+    width: 90%;
     margin: 1rem 0;
     flex: 10;
 `;
@@ -160,21 +179,23 @@ const AddButton = styled.button`
     color: white;
     cursor: pointer;
     flex: 1;
-    margin-left: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.25rem 0;
+    padding: 0.5rem 1rem;
 `;
 
 const TodoList = () => {
     const [todoItem, setTodoItem] = useState([]);
+    const [doneItem, setDoneItem] = useState([]);
     const [input, setInput] = useState("");
+    const [quantity, setQuantity] = useState("");
     const [displayModal, setDisplayModal] = useState(false);
     const [done, setDone] = useState(false);
     const itemsCollectionRef = collection(db, "items");
     const Modal = useRef(null);
     const AddInputField = useRef(null);
+    const QuantityInputField = useRef(null);
 
     const cancel = <CloseIcon />;
     const clear = <ClearAllIcon />;
@@ -183,10 +204,16 @@ const TodoList = () => {
 
     useEffect(() => {
         const getItems = async () => {
-            const data = await getDocs(itemsCollectionRef);
-            setTodoItem(data.docs.map((doc) => ({...doc.data(), id: doc.id})));
+            // eslint-disable-next-line no-unused-vars
+            const data = await getDocs(itemsCollectionRef).then((data) => {
+                setTodoItem(
+                    data.docs.map((doc) => ({...doc.data(), id: doc.id})),
+                );
+            });
         };
+
         getItems();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleAdd = () => {
@@ -200,6 +227,11 @@ const TodoList = () => {
 
     const handleSwitch = () => {
         setDone(!done);
+        const newArr = todoItem.filter((item) => {
+            return item.isDone === true;
+        });
+        setDoneItem(newArr);
+        console.log(newArr);
     };
 
     const handleAddInput = (e) => {
@@ -208,15 +240,27 @@ const TodoList = () => {
         });
     };
 
+    const handleQuantityInput = (e) => {
+        setQuantity(() => {
+            return e.target.value;
+        });
+    };
+
     const handleAddItem = async (e) => {
         await addDoc(itemsCollectionRef, {
             name: input,
             isDone: false,
-            quantity: 1,
+            quantity,
         }).then(function (docRef) {
-            setTodoItem((prev) => [...prev, {name: input, id: docRef.id}]);
+            setTodoItem((prev) => [
+                ...prev,
+                {name: input, id: docRef.id, quantity},
+            ]);
         });
         AddInputField.current.value = "";
+        setInput("");
+        QuantityInputField.current.value = "";
+        setQuantity("");
         AddInputField.current.focus();
     };
 
@@ -244,17 +288,26 @@ const TodoList = () => {
             const index = todoItem.findIndex((x) => x.id === id);
             const newArr = todoItem;
             newArr[index].isDone = true;
-            setTodoItem(newArr);
+            setDoneItem((prev) => [...prev, newArr[index]]);
         });
     };
 
     const handleDelete = async (id) => {
         const userDoc = doc(db, "items", id);
         await deleteDoc(userDoc).then(() => {
-            const newArr = todoItem.filter((item) => {
-                return item.id !== id;
-            });
-            setTodoItem(newArr);
+            if (done) {
+                const newArr = doneItem.filter((item) => {
+                    return item.id !== id;
+                });
+                setDoneItem(newArr);
+                console.log(doneItem);
+            } else {
+                const newArr = todoItem.filter((item) => {
+                    return item.id !== id;
+                });
+                setTodoItem(newArr);
+                console.log(todoItem);
+            }
         });
     };
 
@@ -269,17 +322,29 @@ const TodoList = () => {
                     <ButtonAdd onClick={handleAdd}>
                         {displayModal ? cancel : add}
                     </ButtonAdd>
-                    <ButtonSwitch done={done} onClick={handleSwitch}>
-                        {done ? success : cancel}
+                    <ButtonSwitch done={!done} onClick={handleSwitch}>
+                        {!done ? success : cancel}
                     </ButtonSwitch>
                     <ButtonClear onClick={handleClear}>{clear}</ButtonClear>
                 </ButtonContainer>
                 <ModalAdd ref={Modal} key={Modal}>
-                    <AddInput
-                        ref={AddInputField}
-                        onChange={handleAddInput}
-                        onKeyDown={handleKeypress}
-                    />
+                    <InputContainer>
+                        <InputLabel>name</InputLabel>
+                        <AddInput
+                            ref={AddInputField}
+                            onChange={handleAddInput}
+                            onKeyDown={handleKeypress}
+                        />
+                    </InputContainer>
+                    <InputContainer>
+                        <InputLabel>quantity</InputLabel>
+                        <QuantityInput
+                            type={"number"}
+                            ref={QuantityInputField}
+                            onChange={handleQuantityInput}
+                            onKeyDown={handleKeypress}
+                        />
+                    </InputContainer>
                     <AddButton type={"submit"} onClick={handleAddItem}>
                         {add}
                     </AddButton>
@@ -294,6 +359,7 @@ const TodoList = () => {
                                   <FilteredContainer key={`${filteredItem.id}`}>
                                       <TodoItem
                                           filteredItem={filteredItem.name}
+                                          quantity={filteredItem.quantity}
                                       />
                                       <ButtonContainer2>
                                           <ButtonSetToDone
@@ -313,33 +379,22 @@ const TodoList = () => {
                                       </ButtonContainer2>
                                   </FilteredContainer>
                               ))
-                        : todoItem
-                              .filter((item) => {
-                                  return item.isDone !== false;
-                              })
-                              .map((filteredItem) => (
-                                  <FilteredContainer key={`${filteredItem.id}`}>
-                                      <TodoItem
-                                          filteredItem={filteredItem.name}
-                                      />
-                                      <ButtonContainer2>
-                                          <ButtonSetToDone
-                                              onClick={() =>
-                                                  handleSetToDone(
-                                                      filteredItem.id,
-                                                  )
-                                              }>
-                                              {success}
-                                          </ButtonSetToDone>
-                                          <ButtonDelete
-                                              onClick={() =>
-                                                  handleDelete(filteredItem.id)
-                                              }>
-                                              {cancel}
-                                          </ButtonDelete>
-                                      </ButtonContainer2>
-                                  </FilteredContainer>
-                              ))}
+                        : doneItem?.map((filteredItem) => (
+                              <FilteredContainer key={`${filteredItem.id}`}>
+                                  <TodoItem
+                                      filteredItem={filteredItem.name}
+                                      quantity={filteredItem.quantity}
+                                  />
+                                  <ButtonContainer2>
+                                      <ButtonDelete
+                                          onClick={() =>
+                                              handleDelete(filteredItem.id)
+                                          }>
+                                          {cancel}
+                                      </ButtonDelete>
+                                  </ButtonContainer2>
+                              </FilteredContainer>
+                          ))}
                 </ItemContainer>
             </TodoContainer>
         </div>

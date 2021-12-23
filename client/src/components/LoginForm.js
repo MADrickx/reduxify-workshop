@@ -9,7 +9,7 @@ const Form = styled.form`
     border-radius: 10px;
     box-shadow: -3px -3px 7px #ffffff73, 2px 2px 5px rgba(94, 104, 121, 0.288);
     padding: 1rem;
-    margin: 5rem auto;
+    margin: 2rem auto 7rem auto;
     max-width: 500px;
     display: flex;
     flex-direction: column;
@@ -72,16 +72,19 @@ const LoginForm = () => {
 
     async function handleSubmit(e) {
         e.preventDefault();
-
         try {
             setError("");
             setLoading(true);
-            await login(emailRef.current.value, passwordRef.current.value);
-            navigate("/");
+
+            await login(emailRef.current.value, passwordRef.current.value).then(
+                () => {
+                    navigate("/");
+                },
+            );
         } catch (err) {
             setError("failed to log in");
         }
-        setLoading(false);
+        return () => setLoading(false);
     }
 
     return (
